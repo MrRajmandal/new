@@ -348,8 +348,8 @@ public interface UserDao {
 	
 }
 -----------------------------------------------------------UserDaoImple------------------------------
-package com.task.dao;
-
+package com.task.dto;
+import com.task.*;
 import java.util.List;
 
 import org.hibernate.HibernateException;
@@ -357,95 +357,76 @@ import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.orm.hibernate4.HibernateCallback;
-import org.springframework.orm.hibernate4.HibernateTemplate;
+import org.springframework.orm.hibernate5.HibernateCallback;
+import org.springframework.orm.hibernate5.HibernateTemplate;
 import org.springframework.stereotype.Repository;
 
-import com.task.dto.User;
-
+import com.task.dao.*;
 @Repository
 public class UserDaoImple implements UserDao {
-	
 	@Autowired
 	private HibernateTemplate hibernateTemplate;
 
 	@Override
-	public void insertUser(User user) {  //6) now user object came here and hibernate save it to database and control go back
-		                                 //   to UserServiceImple.java and then UserController
+	public void insertUser(User user) {
 		hibernateTemplate.execute(new HibernateCallback<Void>() {
 
 			@Override
 			public Void doInHibernate(Session session) throws HibernateException {
-				Transaction tr = session.beginTransaction();
+				Transaction tr=session.beginTransaction();
 				session.save(user);
 				tr.commit();
 				session.flush();
 				session.close();
-				return null;
+				return null ;
 			}
-			
-		});
-	}
+		});}
 
 	@Override
 	public boolean checkUser(User user) {
-		boolean b = hibernateTemplate.execute(new HibernateCallback<Boolean>() {
+		
+	boolean b=	hibernateTemplate.execute(new HibernateCallback<Boolean>() {
 
 			@Override
 			public Boolean doInHibernate(Session session) throws HibernateException {
-				Transaction tr = session.beginTransaction();
-				Query q = session.createQuery("from User where userName = ? and userPass = ?");
+				Transaction tr=session.beginTransaction();
+				Query q=session.createQuery("from User where userName=? and userPass=?");
 				q.setString(0, user.getUserName());
 				q.setString(1, user.getUserPass());
-				
-				
-				List<User> li = q.list();
-				boolean flag = !li.isEmpty();
-				user.setUserId(li.get(0).getUserId()); 
+				List<User> li=q.list();
+				boolean flag= !li.isEmpty();
+				user.setUserId(li.get(0).getUserId());
 				tr.commit();
 				session.flush();
 				session.close();
-				return flag;
+				return  flag;
 			}
-			
 		});
+		
 		return b;
 	}
 
 	@Override
 	public List<User> selectAll(int userId) {
-		
-		List<User> userList = hibernateTemplate.execute(new HibernateCallback<List<User>>() {
+		List<User> userList=hibernateTemplate.execute(new HibernateCallback<List<User>>() {
 
 			@Override
 			public List<User> doInHibernate(Session session) throws HibernateException {
-				Transaction tr = session.beginTransaction();
-				Query q = session.createQuery("from User");
-				List<User> li = q.list();
+				Transaction tr=session.beginTransaction();
+				Query al=session.createQuery("from User");
+				List<User> all=al.list();
 				
-				Query r=session.createQuery("from User where userId = ?");
-				r.setInteger(0, userId);
-				List<User>pi=r.list();
+				Query re=session.createQuery("from User where userId=?");
+				re.setInteger(0, userId);
 				
-				li.removeAll(pi);
-				System.out.println(li); 
-				tr.commit();
-				session.flush();
-				session.close();
-				return li;
+				all.remove(re);
+				return all;
 			}
-
 		});
-		
 		return userList;
 	}
 
-	
-	
 }
-
-
-
 
 
 ---------------------------------------------------------------UserController------------------------------
@@ -464,58 +445,51 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.task.dto.User;
 import com.task.service.UserService;
-import com.task.valid.UserValidator;
 
 @Controller
 public class UserController {
 	
 	@Autowired
 	private UserService userService;
-	@Autowired
-	private UserValidator userValidator;
-	                          //Request come from index.jsp
+
+
 	@RequestMapping(value = "/prep_reg_form.htm",method = RequestMethod.GET)
 	public String prepRegForm(ModelMap map) {
 		map.put("user", new User());
-		return "reg_form";  //1)creating an Object and sending to (reg_form) page.
+		return "reg_form";  
 	}
 	
 	@RequestMapping(value = "/reg.htm",method = RequestMethod.POST)
 	public String register(User user,ModelMap map) {
-		userService.addUser(user); //3) now User object have  an data and we are calling (userService.addUser(user)) so 
-		                           //control goes to (userServiceImple.java)
+		userService.addUser(user);
 		
-		return "index";            //7)now control is here and open index.jsp
+		return "index";           
 	}
 	
 	
 	
 	
-	                         //8) control came here after sign in
+	                         
 	@RequestMapping(value = "/prep_log_form.htm",method = RequestMethod.GET)
 	public String prepLogForm(ModelMap map) {
-		map.put("user", new User());// 9) user object created and store in the model map
-		return "login_form";// 10) go to (login_form.jsp)
+		map.put("user", new User());
+		return "login_form";
 	}
 	
 	
-	                  // 12) control come here
+	                 
 	@RequestMapping(value = "/login.htm",method = RequestMethod.POST)
 	public String login(User user,BindingResult result,ModelMap map,HttpSession session) {
-		userValidator.validate(user, result);
-		if(result.hasErrors()) {
-			return "login_form";
-		}
-		
+	
 		boolean b = userService.findUser(user);
 		if(b) {
 			session.setAttribute("user", user); 
 			return "home";
 		}else {
 			map.put("user", new User());
-			return "login_form";
+		return "login_form";
 		}
-	}
+}
 	
 	@RequestMapping(value = "/user_list.htm",method = RequestMethod.GET)
 	public String allUser(ModelMap map,HttpSession session) {
@@ -527,6 +501,7 @@ public class UserController {
 	
 	
 }
+
 ---------------------------------------------------------UserService----------------------------------------
 package com.task.service;
 
@@ -576,40 +551,7 @@ public class UserServiceImple implements UserService {
 
 	
 }
-------------------------------------------------------UserValidator------------------------------------------------
-package com.task.valid;
 
-import org.springframework.stereotype.Service;
-import org.springframework.validation.Errors;
-import org.springframework.validation.ValidationUtils;
-import org.springframework.validation.Validator;
-
-import com.task.dto.User;
-
-@Service
-public class UserValidator implements Validator {
-
-	@Override
-	public boolean supports(Class<?> clazz) {
-		return clazz.equals(User.class);
-	}
-
-	@Override
-	public void validate(Object target, Errors errors) {
-		ValidationUtils.rejectIfEmptyOrWhitespace(errors, "userName","unmKey", "user name required");
-		ValidationUtils.rejectIfEmptyOrWhitespace(errors, "userPass", "passKey","password required");
-		
-		User user = (User)target;
-		if(user.getUserPass()!=null) {
-			if(user.getUserPass().length()<3) { 
-				errors.rejectValue("userPass", "passKey", "password should contain more 2 chars");
-			}
-		}
-		
-		
-	}
-	
-}
 
 
 -----------------------------------------home.jsp--------------------------------
